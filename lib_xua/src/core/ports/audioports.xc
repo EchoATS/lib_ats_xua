@@ -1,5 +1,8 @@
 // Copyright 2011-2023 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
+// This Software is subject to the terms of the XMOS Public Licence: Version 1.\
+
+#ifndef EXCLUDE_USB_AUDIO_MAIN
+
 #include <xs1.h>
 #include <platform.h>
 #include <print.h>
@@ -131,3 +134,4 @@ void ConfigAudioPorts(
 #endif //#if (I2S_CHANS_DAC != 0) || (I2S_CHANS_ADC != 0)
 }
 
+#endif

@@ -9,6 +9,8 @@
  * Additionally this thread handles clocking and CODEC/DAC/ADC config.
  **/
 
+#ifndef EXCLUDE_USB_AUDIO_MAIN
+
 #include <syscall.h>
 #include <platform.h>
 #include <xs1.h>
@@ -961,3 +963,5 @@ void XUA_AudioHub(chanend ?c_aud, clock ?clk_audio_mclk, clock ?clk_audio_bclk,
         }
     }
 }
+
+#endif

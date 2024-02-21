@@ -910,6 +910,7 @@ void XUA_Endpoint0_loop(XUD_Result_t result, USB_SetupPacket_t sp, chanend c_ep0
                             result = VendorAudioRequests(ep0_out, ep0_in, sp.bRequest,
                                 sp.wValue >> 8, sp.wValue & 0xff,
                                 sp.wIndex >> 8, sp.bmRequestType.Direction,
+                                sp.wLength,
                                 c_audioControl, c_mix_ctl, c_clk_ctl);
                         }
 #endif

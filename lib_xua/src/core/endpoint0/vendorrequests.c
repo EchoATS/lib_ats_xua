@@ -7,16 +7,19 @@
 #include "vendorrequests.h"
 
 int VendorAudioRequests(XUD_ep ep0_out, XUD_ep ep0_in, unsigned char bRequest, unsigned char cs, unsigned char cn,
-    unsigned short unitId, unsigned char direction, NULLABLE_RESOURCE(chanend, c_audioControl),
+    unsigned short unitId, unsigned char direction, 
+    unsigned short wLength,
+    NULLABLE_RESOURCE(chanend, c_audioControl),
     NULLABLE_RESOURCE(chanend, c_mix_ctl),
     NULLABLE_RESOURCE(chanend, c_clk_ctL)) __attribute__ ((weak));
 
 int VendorAudioRequests(XUD_ep ep0_out, XUD_ep ep0_in, unsigned char bRequest, unsigned char cs, unsigned char cn,
-    unsigned short unitId, unsigned char direction, NULLABLE_RESOURCE(chanend, c_audioControl),
+    unsigned short unitId, unsigned char direction, 
+    unsigned short wLength,
+    NULLABLE_RESOURCE(chanend, c_audioControl),
     NULLABLE_RESOURCE(chanend, c_mix_ctl),
     NULLABLE_RESOURCE(chanend, c_clk_ctL))
 {
-
     return XUD_RES_ERR;
 }
 
@@ -31,7 +34,6 @@ void VendorRequests_Init(VENDOR_REQUESTS_PARAMS_DEC) __attribute__ ((weak));
 
 void VendorRequests_Init(VENDOR_REQUESTS_PARAMS_DEC)
 {
-
 }
 
 #endif /* XUA_USB_EN */
