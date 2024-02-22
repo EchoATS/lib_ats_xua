@@ -1,5 +1,6 @@
 // Copyright 2013-2023 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
+#ifndef EXCLUDE_USB_AUDIO_MAIN
 
 #include <xs1.h>
 #define __ASSEMBLER__ // Work around for bug #14118
@@ -63,3 +64,4 @@ void ConfigAudioPortsWrapper(
                 p_mclk_in, clk_audio_bclk, divide, curSamFreq);
 }
 
+#endif

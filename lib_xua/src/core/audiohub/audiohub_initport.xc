@@ -1,5 +1,7 @@
 // Copyright 2018-2023 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
+#ifndef EXCLUDE_USB_AUDIO_MAIN
+
 #include "xua.h"
 #include "dsd_support.h"
 
@@ -139,3 +141,4 @@ void InitPorts_slave(buffered _XUA_CLK_DIR port:32 p_lrclk, buffered _XUA_CLK_DI
 }
 #endif
 
+#endif
