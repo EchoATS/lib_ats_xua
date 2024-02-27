@@ -1,5 +1,12 @@
 // Copyright 2011-2023 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
+
+#ifdef EXCLUDE_USB_AUDIO_MAIN
+
+#include "user_audioports.h"
+
+#else
+
 #ifndef _AUDIOPORTS_H_
 #define _AUDIOPORTS_H_
 
@@ -107,3 +114,5 @@ void EnableBufferedPort(port p, unsigned transferWidth);
 #endif
 
 #endif /* _AUDIOPORTS_H_ */
+
+#endif

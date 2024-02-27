@@ -1,6 +1,12 @@
 // Copyright 2015-2022 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 
+#ifdef EXCLUDE_USB_AUDIO_MAIN
+
+#include "user_uac_hwresources.h"
+
+#else
+
 #ifndef _UAC_HWRESOURCES_H_
 #define _UAC_HWRESOURCES_H_
 
@@ -13,3 +19,5 @@
 #define CLKBLK_I2S_BIT     XS1_CLKBLK_3
 
 #endif /* _UAC_HWRESOURCES_H_ */
+
+#endif
