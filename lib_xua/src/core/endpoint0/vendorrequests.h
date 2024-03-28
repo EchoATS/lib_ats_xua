@@ -17,6 +17,8 @@
 
 #define PREPEND_COMMA(x) ,x
 
+#define VENDOR_REQUESTS_PARAMS chanend c_echoats
+
 #ifndef VENDOR_REQUESTS_PARAMS
 #define VENDOR_REQUESTS_PARAMS_
 #define VENDOR_REQUESTS_PARAMS_DEC_
@@ -40,9 +42,8 @@ int VendorAudioRequests(XUD_ep ep0_out, XUD_ep ep0_in, unsigned char bRequest, u
     NULLABLE_RESOURCE(chanend, c_clk_ctL));
 
 
-int VendorRequests(XUD_ep ep0_out, XUD_ep ep0_in,  REFERENCE_PARAM(USB_SetupPacket_t, sp) VENDOR_REQUESTS_PARAMS_DEC_);
+int VendorRequests(XUD_ep ep0_out, XUD_ep ep0_in,  REFERENCE_PARAM(USB_SetupPacket_t, sp), chanend c_echoats);
 
 void VendorRequests_Init(VENDOR_REQUESTS_PARAMS_DEC);
 
 #endif
-

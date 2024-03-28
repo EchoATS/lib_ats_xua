@@ -452,14 +452,14 @@ static unsigned char hidReportDescriptorPtr[] = {
 
 
 void XUA_Endpoint0_init(chanend c_ep0_out, chanend c_ep0_in, NULLABLE_RESOURCE(chanend, c_audioControl),
-    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface) VENDOR_REQUESTS_PARAMS_DEC_)
+    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface), chanend c_echoats)
 {
     ep0_out = XUD_InitEp(c_ep0_out);
     ep0_in  = XUD_InitEp(c_ep0_in);
 
     XUA_Endpoint0_setStrTable();
 
-    VendorRequests_Init(VENDOR_REQUESTS_PARAMS);
+    VendorRequests_Init(c_echoats);
 
 #if (MIXER)
     /* Set up mixer default state */
@@ -545,7 +545,7 @@ void XUA_Endpoint0_init(chanend c_ep0_out, chanend c_ep0_in, NULLABLE_RESOURCE(c
 }
 
 void XUA_Endpoint0_loop(XUD_Result_t result, USB_SetupPacket_t sp, chanend c_ep0_out, chanend c_ep0_in, NULLABLE_RESOURCE(chanend, c_audioControl),
-    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface) VENDOR_REQUESTS_PARAMS_DEC_)
+    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface), chanend c_echoats)
 {
  if (result == XUD_RES_OKAY)
     {
@@ -930,7 +930,7 @@ void XUA_Endpoint0_loop(XUD_Result_t result, USB_SetupPacket_t sp, chanend c_ep0
             /* Run vendor defined parsing/processing */
             /* Note, an interface might seem ideal here but this *must* be executed on the same
              * core sure to shared memory depandancy */
-            result = VendorRequests(ep0_out, ep0_in, &sp VENDOR_REQUESTS_PARAMS_);
+            result = VendorRequests(ep0_out, ep0_in, &sp, c_echoats);
         }
     }
 
@@ -1099,16 +1099,16 @@ void XUA_Endpoint0_loop(XUD_Result_t result, USB_SetupPacket_t sp, chanend c_ep0
 
 /* Endpoint 0 function.  Handles all requests to the device */
 void XUA_Endpoint0(chanend c_ep0_out, chanend c_ep0_in, NULLABLE_RESOURCE(chanend, c_audioControl),
-    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface) VENDOR_REQUESTS_PARAMS_DEC_)
+    chanend c_mix_ctl, chanend c_clk_ctl, chanend c_EANativeTransport_ctrl, CLIENT_INTERFACE(i_dfu, dfuInterface), chanend c_echoats)
 {
     USB_SetupPacket_t sp;
-    XUA_Endpoint0_init(c_ep0_out, c_ep0_in, c_audioControl, c_mix_ctl, c_clk_ctl, c_EANativeTransport_ctrl, dfuInterface VENDOR_REQUESTS_PARAMS_);
+    XUA_Endpoint0_init(c_ep0_out, c_ep0_in, c_audioControl, c_mix_ctl, c_clk_ctl, c_EANativeTransport_ctrl, dfuInterface, c_echoats);
 
     while(1)
     {
         /* Returns XUD_RES_OKAY for success, XUD_RES_RST for bus reset */
         XUD_Result_t result = USB_GetSetupPacket(ep0_out, ep0_in, &sp);
-        XUA_Endpoint0_loop(result, sp, c_ep0_out, c_ep0_in, c_audioControl, c_mix_ctl, c_clk_ctl, c_EANativeTransport_ctrl, dfuInterface VENDOR_REQUESTS_PARAMS_);
+        XUA_Endpoint0_loop(result, sp, c_ep0_out, c_ep0_in, c_audioControl, c_mix_ctl, c_clk_ctl, c_EANativeTransport_ctrl, dfuInterface, c_echoats);
     }
 }
 #endif /* XUA_USB_EN*/

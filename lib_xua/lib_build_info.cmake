@@ -22,11 +22,8 @@ set(LIB_INCLUDES api
 set(LIB_OPTIONAL_HEADERS xua_conf.h static_hid_report.h)
 set(LIB_DEPENDENT_MODULES "lib_locks"
                           "lib_logging"
-                          "lib_mic_array(feature/xcommon_cmake)"
-                          "lib_spdif"
                           "lib_xassert"
                           "lib_xud"
-                          "lib_adat"
                           "lib_sw_pll")
 
 set(LIB_COMPILER_FLAGS -O3 -DREF_CLK_FREQ=100 -fasm-linenum -fcomment-asm)

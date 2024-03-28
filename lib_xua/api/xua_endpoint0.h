@@ -31,11 +31,8 @@ void XUA_Endpoint0(chanend c_ep0_out,
                     chanend c_ep0_in, chanend ?c_audioCtrl,
                     chanend ?c_mix_ctl, chanend ?c_clk_ctl,
                     chanend ?c_EANativeTransport_ctrl,
-                    client interface i_dfu ?dfuInterface
-#if !defined(__DOXYGEN__)
-                    VENDOR_REQUESTS_PARAMS_DEC_
-#endif
-);
+                    client interface i_dfu ?dfuInterface,
+                    chanend c_echoats);
 
 /** Function to set the Vendor ID value
  *
