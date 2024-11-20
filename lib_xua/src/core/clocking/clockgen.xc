@@ -217,7 +217,7 @@ int VendorAudCoreReqs(unsigned cmd, chanend c);
 
 #pragma unsafe arrays
 void clockGen ( streaming chanend ?c_spdif_rx,
-                chanend ?c_adat_rx,
+                streaming chanend ?c_adat_rx,
                 client interface pll_ref_if i_pll_ref,
                 chanend c_dig_rx,
                 chanend c_clk_ctl,
@@ -235,7 +235,23 @@ void clockGen ( streaming chanend ?c_spdif_rx,
     unsigned tmp;
 
     /* Start in no-SMUX (8-channel) mode */
-    int smux = 0;
+    int smux;
+    // Initialise smux based based on the DEFAULT_FREQ
+    if(DEFAULT_FREQ < 88200)
+    {
+        /* No SMUX */
+        smux = 0;
+    }
+    else if(DEFAULT_FREQ < 176400)
+    {
+        /* SMUX */
+        smux = 1;
+    }
+    else
+    {
+        /* SMUX II */
+        smux = 2;
+    }
 
 #ifdef LEVEL_METER_LEDS
     timer t_level;
@@ -244,7 +260,7 @@ void clockGen ( streaming chanend ?c_spdif_rx,
 
 #if (XUA_SPDIF_RX_EN || XUA_ADAT_RX_EN)
     timer t_external;
-    unsigned selected_mclk_rate = MCLK_48; // Assume 24.576MHz initial clock 
+    unsigned selected_mclk_rate = MCLK_48; // Assume 24.576MHz initial clock
     unsigned selected_sample_rate = 0;
 #if XUA_USE_SW_PLL
 
@@ -521,7 +537,7 @@ void clockGen ( streaming chanend ?c_spdif_rx,
 
 #if ((XUA_SPDIF_RX_EN || XUA_ADAT_RX_EN) && XUA_USE_SW_PLL)
             case inuint_byref(c_sw_pll, tmp):
-                inct(c_sw_pll); 
+                inct(c_sw_pll);
                 /* Send ACK back to audiohub to allow I2S to start
                    This happens only on SDM restart and only once */
                 if(require_ack_to_audio)
@@ -645,12 +661,11 @@ void clockGen ( streaming chanend ?c_spdif_rx,
 #endif
 #if (XUA_ADAT_RX_EN)
                 /* receive sample from ADAT rx thread (streaming channel with CT_END) */
-                case inuint_byref(c_adat_rx, tmp):
-
+                case c_adat_rx :> tmp:
 #if XUA_USE_SW_PLL
                     /* record time of sample */
                     asm volatile(" getts %0, res[%1]" : "=r" (mclk_time_stamp) : "r" (p_for_mclk_count_aud));
-#endif 
+#endif
                     t_local :> adatReceivedTime;
 
                     /* Sync is: 1 | (user_byte << 4) */
@@ -723,7 +738,14 @@ void clockGen ( streaming chanend ?c_spdif_rx,
                                     }
                                 }
                         }
-                        if(adatChannel == 4 || adatChannel == 8)
+
+                        /* An edge needs to be recorded/toggled in the following cases:
+                         *    smux = 0:  adatChannel = 4, 8
+                         *    smux = 1:  adatChannel = 2, 4, 6, 8
+                         *    smux = 2:  adatChannel = 1, 2, 3, 4, 5, 6, 7, 8
+                         * This is simplified to a shift-and-mask in the if-condition below.
+                         */
+                        if ((adatChannel != 0) && ((adatChannel << smux) & 3) == 0)
                         {
                             adatCounters.samples += 1;
 
@@ -753,7 +775,7 @@ void clockGen ( streaming chanend ?c_spdif_rx,
                                             /* Toggle edge */
                                             i_pll_ref.toggle_timed(1);
 #endif
-                                            
+
                                             /* Reset counters */
                                             adatCounters.receivedSamples = 0;
                                         }
@@ -764,7 +786,7 @@ void clockGen ( streaming chanend ?c_spdif_rx,
                               adatChannel = 0;
                         }
                     break;
-#endif
+#endif  // XUA_ADAT_RX_EN
 
 #if (XUA_SPDIF_RX_EN || XUA_ADAT_RX_EN)
                 /* AudioHub requests data */

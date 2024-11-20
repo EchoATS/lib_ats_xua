@@ -1,4 +1,4 @@
-// Copyright 2011-2021 XMOS LIMITED.
+// Copyright 2011-2024 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 #ifndef _VENDORREQUESTS_H_
 #define _VENDORREQUESTS_H_
@@ -37,7 +37,7 @@
 int VendorAudioRequests(XUD_ep ep0_out, XUD_ep ep0_in, unsigned char bRequest, unsigned char cs, unsigned char cn,
     unsigned short unitId, unsigned char direction, 
     unsigned short wLength,
-    NULLABLE_RESOURCE(chanend, c_audioControl),
+    NULLABLE_RESOURCE(chanend, c_aud_ctl),
     NULLABLE_RESOURCE(chanend, c_mix_ctl),
     NULLABLE_RESOURCE(chanend, c_clk_ctL));
 

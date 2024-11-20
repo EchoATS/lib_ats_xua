@@ -1,25 +1,149 @@
-lib_xua Change Log
+lib_xua change log
 ==================
 
-HEAD
-----
+5.0.0
+-----
 
-  * ADDED:     Support for XCommon CMake build system
-  * RESOLVED:  Output volume control not enabled by default when MIXER disabled
-  * RESOLVED:  Full 32bit result of volume processing not calculated when required
-  * RESOLVED:  Input stream sending an erroneous zero-length packet when exiting underflow state
-  * RESOLVED   Build failures when XUA_USB_EN = 0
-  * RESOLVED:  Clock configuration issues when ADAT and S/PDIF receive are enabled (#352)
-  * RESOLVED:  Repeated old S/PDIF and ADAT samples when entering underflow state
-  * CHANGED:   QUAD_SPI_FLASH replaced by XUA_QUAD_SPI_FLASH (default: 1)
-  * CHANGED:   UserBufferManagementInit() now takes a sample rate parameter
-  * CHANGED:   xcore.ai targets use sigma-delta software PLL for clock recovery of
-    digital Rx streams and synch USB audio by default.
-  * CHANGED:   Windows host mixer control application now requires driver GUID option
+  * ADDED:     Support for DFU 1.1 DFU_DETACH with bitWillDetach set to 1
+  * ADDED:     Enumerate with the DFU interface as WINUSB compatible. This is
+    done by updating the bcdUSB version to 2.01 and providing the BOS and
+    MSOS2.0 descriptors listing WINUSB compatibility at enumeration
+  * ADDED:     Support for XMOS_DFU_REVERTFACTORY arriving as a
+    USB_BMREQ_H2D_VENDOR_INT request to work with the latest Thesycon DFU driver
+    on Windows
+  * ADDED:     Support for building the xmosdfu application on MacOS arm64
+  * ADDED:     MIDI support with UAC1.0
+  * ADDED:     DFU support with UAC1.0
+  * CHANGED:   By default, enumerate with iSerialNumber set to None(0) in the
+    device descriptor
+  * CHANGED:   xmosdfu app to use DFU_DETACH
+  * CHANGED:   xmosdfu app to send XMOS_DFU_REVERTFACTORY as bmRequestType.Type
+    = Vendor
+  * CHANGED:   xmosdfu app command line for specifying runtime and DFU mode PIDs
+  * CHANGED:   Limit HS_STREAM_FORMAT_OUTPUT_1/2/3_MAXPACKETSIZE to 1024 bytes
+    to fix bcdUSB version 2.01 USB device supporting a sampling rate of 192KHz
+    not enumerating on Windows
+  * CHANGED:   Added default value (1) for XUA_QUAD_SPI_FLASH
+  * CHANGED:   Default value of FLASH_MAX_UPGRADE_SIZE to 512 KB
+  * CHANGED:   Build examples using XCommon CMake instead of XCommon
+  * CHANGED:   AN00248 now targets XK-EVK-XU316 and uses mic_array version 5
+    (new API)
+  * CHANGED:   Examples use lib_board_support for XK-AUDIO-316-MC-AB support
+    code
+  * CHANGED:   Master clock port no longer used if not required, for example
+    when using I2S slave with USB disabled
+  * FIXED:     Build issue when XUA_NUM_PDM_MICS > 0
+  * FIXED:     baInterfaceNr field in MIDI Class-specific AC Interface
+    Descriptor to specify the correct MIDI streaming interface number
+  * REMOVED:   Support for PDM mics for xcore-200 targets
 
   * Changes to dependencies:
 
+    - lib_adat: 1.2.0 -> 2.0.1
+
+    - lib_dsp: Removed dependency
+
+    - lib_locks: 2.2.0 -> 2.3.1
+
+    - lib_logging: 3.2.0 -> 3.3.1
+
+    - lib_mic_array: 4.6.0 -> 5.5.0
+
+    - lib_spdif: 6.1.1 -> 6.2.1
+
+    - lib_sw_pll: 2.2.0 -> 2.3.1
+
+    - lib_xassert: 4.2.0 -> 4.3.1
+
+    - lib_xcore_math: Added dependency 2.4.0
+
+    - lib_xud: 2.3.2 -> 2.4.0
+
+4.2.0
+-----
+
+  * CHANGED:   lsats instruction used for saturation in the mixer
+  * CHANGED:   Mixer task communication scheme simplified, aiding code reuse &
+    performance
+  * CHANGED:   Audio Class Control Interface no longer presented in descriptors
+    if NUM_USB_CHAN_IN and NUM_USB_CHAN_OUT are both zero
+  * CHANGED:   Buffering sub-system no longer spawns if NUM_USB_CHAN_IN and
+    NUM_USB_CHAN_OUT are both zero
+  * CHANGED:   Communication of commands between tasks now uniformly uses
+    control tokens. Potentially making mix & match of components more tractable
+    in the future
+
+  * Changes to dependencies:
+
+    - lib_spdif: 6.1.0 -> 6.1.1
+
+    - lib_xud: 2.3.1 -> 2.3.2
+
+4.1.0
+-----
+
+  * ADDED:     MIDI unit and sub-system tests
+  * CHANGED:   Only the minimum number of ADAT input formats are enabled based
+    on the supported sample rates
+  * CHANGED:   Enabling ADAT tx enables different channel count interface alts,
+    based on sample rate
+  * CHANGED:   Input audio buffer size and the exit condition underflow modified
+    to to fix buffer underflow in some configurations
+  * CHANGED:   CT_END token based handshake in MIDI channels transactions,
+    reducing opportuninity for deadlock
+  * FIXED:     Device fails to enumerate when ADAT and S/PDIF transmit are
+    enabled
+  * FIXED:     Update software PLL at the correct rate for ADAT S/MUX
+  * FIXED:     Incorrect internal input EP count for input only devices
+  * FIXED:     Samples transferred to ADAT tx too frequently in TDM mode
+  * FIXED:     S/MUX not initialised to a value based on DEFAULT_FREQ in
+    clockgen
+  * FIXED:     Trap when moving to DSD mode on XS3A based devices
+
+  * Changes to dependencies:
+
+    - lib_adat: 1.0.1 -> 1.2.0
+
+    - lib_locks: 2.1.0 -> 2.2.0
+
+    - lib_logging: 3.1.1 -> 3.2.0
+
+    - lib_sw_pll: 2.1.0 -> 2.2.0
+
+    - lib_xassert: 4.1.0 -> 4.2.0
+
+4.0.0
+-----
+
+  * ADDED:     Support for XCommon CMake build system
+  * FIXED:     Output volume control not enabled by default when MIXER disabled
+  * FIXED:     Full 32bit result of volume processing not calculated when
+    required
+  * FIXED:     Input stream sending an erroneous zero-length packet when exiting
+    underflow state
+  * FIXED      Build failures when XUA_USB_EN = 0
+  * FIXED:     Clock configuration issues when ADAT and S/PDIF receive are
+    enabled (#352)
+  * FIXED:     Repeated old S/PDIF and ADAT samples when entering underflow
+    state
+  * CHANGED:   QUAD_SPI_FLASH replaced by XUA_QUAD_SPI_FLASH (default: 1)
+  * CHANGED:   UserBufferManagementInit() now takes a sample rate parameter
+  * CHANGED:   xcore.ai targets use sigma-delta software PLL for clock recovery
+    of digital Rx streams and synchronous USB audio by default
+  * CHANGED:   Windows host mixer control application now requires driver GUID
+    option
+
+  * Changes to dependencies:
+
+    - lib_dsp: 6.2.1 -> 6.3.0
+
+    - lib_mic_array: 4.5.0 -> 4.6.0
+
+    - lib_spdif: 5.0.1 -> 6.1.0
+
     - lib_sw_pll: Added dependency 2.1.0
+
+    - lib_xud: 2.2.3 -> 2.3.1
 
 3.5.1
 -----

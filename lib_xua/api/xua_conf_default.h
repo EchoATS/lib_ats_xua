@@ -2,10 +2,9 @@
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 /*
  * @brief       Defines relating to device configuration and customisation of lib_xua
- * @author      Ross Owen, XMOS Limited
  */
-#ifndef __XUA_CONF_DEFAULT_H__
-#define __XUA_CONF_DEFAULT_H__
+#ifndef _XUA_CONF_DEFAULT_H_
+#define _XUA_CONF_DEFAULT_H_
 
 #ifdef __xua_conf_h_exists__
     #include "xua_conf.h"
@@ -58,7 +57,7 @@
 #endif
 
 /*
- * Channel based defines
+ * Audio channel based defines
  */
 
 /**
@@ -328,7 +327,7 @@
  *
  * Default: 1 (Enabled) when AUDIO_CLASS_FALLBACK disabled.
  */
-#if (AUDIO_CLASS == 2)
+#if ((AUDIO_CLASS == 2) || __DOXYGEN__)
     /* Whether to run in Audio Class 2.0 mode in USB Full-speed */
     #if !defined(FULL_SPEED_AUDIO_2) && (AUDIO_CLASS_FALLBACK == 0)
         #define FULL_SPEED_AUDIO_2    1     /* Default to falling back to UAC2 */
@@ -413,10 +412,48 @@
 #endif
 
 /**
+ * @brief Enables SPDIF Rx. Default: 0 (Disabled)
+ */
+#ifndef XUA_SPDIF_RX_EN
+#define XUA_SPDIF_RX_EN       (0)
+#endif
+
+
+/**
+ * @brief S/PDIF Rx first channel index, defines which channels S/PDIF will be input on.
+ * Note, indexed from 0.
+ *
+ * Default: NONE (Must be defined by app when SPDIF_RX enabled)
+ */
+#if (XUA_SPDIF_RX_EN) || defined (__DOXYGEN__)
+    #ifndef SPDIF_RX_INDEX
+        #error SPDIF_RX_INDEX not defined and XUA_SPDIF_RX_EN defined
+        #define SPDIF_RX_INDEX 0 /* Default define for doxygen */
+    #endif
+#endif
+
+
+/**
  * @brief Enables ADAT Tx. Default: 0 (Disabled)
  */
 #ifndef XUA_ADAT_TX_EN
 #define XUA_ADAT_TX_EN           (0)
+#endif
+
+/* Calculate max ADAT channels based on sample rate range. Used for Tx and Rx */
+#if (MIN_FREQ < 88200)
+    #define ADAT_MAX_CHANS     (8)
+#elif (MIN_FREQ < 176400)
+    #define ADAT_MAX_CHANS     (4)
+#else
+    #define ADAT_MAX_CHANS     (2)
+#endif
+
+/* Set the maximum number of channels for ADAT */
+#if XUA_ADAT_TX_EN
+    #define ADAT_TX_MAX_CHANS   ADAT_MAX_CHANS
+#else
+    #define ADAT_TX_MAX_CHANS   (0)
 #endif
 
 /**
@@ -424,15 +461,15 @@
  *
  * Default: 0 (i.e. channels [0:7])
  * */
-#ifndef ADAT_TX_INDEX
-#define ADAT_TX_INDEX         (0)
-#endif
+#if (XUA_ADAT_TX_EN) || defined(__DOXYGEN__)
+    #ifndef ADAT_TX_INDEX
+        #error ADAT_TX_INDEX not defined and XUA_ADAT_TX_EN is true
+        #define ADAT_TX_INDEX (0)
+    #endif
 
-/**
- * @brief Enables SPDIF Rx. Default: 0 (Disabled)
- */
-#ifndef XUA_SPDIF_RX_EN
-#define XUA_SPDIF_RX_EN       (0)
+    #if (ADAT_TX_INDEX + ADAT_TX_MAX_CHANS > NUM_USB_CHAN_OUT)
+        #error Not enough channels for ADAT Tx
+    #endif
 #endif
 
 /**
@@ -442,17 +479,11 @@
 #define XUA_ADAT_RX_EN        (0)
 #endif
 
-/**
- * @brief S/PDIF Rx first channel index, defines which channels S/PDIF will be input on.
- * Note, indexed from 0.
- *
- * Default: NONE (Must be defined by app when SPDIF_RX enabled)
- */
-#if (XUA_SPDIF_RX_EN) || defined (__DOXYGEN__)
-#ifndef SPDIF_RX_INDEX
-    #error SPDIF_RX_INDEX not defined and XUA_SPDIF_RX_EN defined
-    #define SPDIF_RX_INDEX 0 /* Default define for doxygen */
-#endif
+/* Set the maximum number of channels for ADAT */
+#if XUA_ADAT_RX_EN
+    #define ADAT_RX_MAX_CHANS   ADAT_MAX_CHANS
+#else
+    #define ADAT_RX_MAX_CHANS   (0)
 #endif
 
 /**
@@ -462,34 +493,84 @@
  * Default: NONE (Must be defined by app when XUA_ADAT_RX_EN is true)
  */
 #if (XUA_ADAT_RX_EN) || defined(__DOXYGEN__)
-#ifndef ADAT_RX_INDEX
-    #error ADAT_RX_INDEX not defined and XUA_ADAT_RX_EN is true
-    #define ADAT_RX_INDEX (0) /* Default define for doxygen */
+    #ifndef ADAT_RX_INDEX
+        #error ADAT_RX_INDEX not defined and XUA_ADAT_RX_EN is true
+        #define ADAT_RX_INDEX (0) /* Default define for doxygen */
+    #endif
+
+    #if (ADAT_RX_INDEX + ADAT_RX_MAX_CHANS > NUM_USB_CHAN_IN)
+        #error Not enough channels for ADAT Rx
+    #endif
 #endif
 
-#if (ADAT_RX_INDEX + 8 > NUM_USB_CHAN_IN)
-    #error Not enough channels for ADAT
-#endif
-#endif
-
-#if (XUA_ADAT_RX_EN)
 
 /* Setup input stream formats for ADAT */
-#if(MAX_FREQ > 96000)
-#define INPUT_FORMAT_COUNT 3
-#elif(MAX_FREQ > 48000)
-#define INPUT_FORMAT_COUNT 2
-#else
-#define INPUT_FORMAT_COUNT 1
+#if (XUA_ADAT_RX_EN)
+    #if (MAX_FREQ > 96000)
+        #if (MIN_FREQ > 96000)
+            #define INPUT_FORMAT_COUNT 1
+            #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+        #elif (MIN_FREQ > 48000)
+            #define INPUT_FORMAT_COUNT 2
+            #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+            #define HS_STREAM_FORMAT_INPUT_2_CHAN_COUNT (NUM_USB_CHAN_IN - 2)
+        #else
+            #define INPUT_FORMAT_COUNT 3
+            #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+            #define HS_STREAM_FORMAT_INPUT_2_CHAN_COUNT (NUM_USB_CHAN_IN - 4)
+            #define HS_STREAM_FORMAT_INPUT_3_CHAN_COUNT (NUM_USB_CHAN_IN - 6)
+        #endif
+    #elif (MAX_FREQ > 48000)
+        #if (MIN_FREQ > 48000)
+            #define INPUT_FORMAT_COUNT 1
+            #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+        #else
+            #define INPUT_FORMAT_COUNT 2
+            #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+            #define HS_STREAM_FORMAT_INPUT_2_CHAN_COUNT (NUM_USB_CHAN_IN - 4)
+        #endif
+    #else
+        #define INPUT_FORMAT_COUNT 1
+        #define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
+    #endif
 #endif
 
-#define HS_STREAM_FORMAT_INPUT_1_CHAN_COUNT NUM_USB_CHAN_IN
-#define HS_STREAM_FORMAT_INPUT_2_CHAN_COUNT (NUM_USB_CHAN_IN - 4)
-#define HS_STREAM_FORMAT_INPUT_3_CHAN_COUNT (NUM_USB_CHAN_IN - 6)
+/* Setup output stream formats for ADAT */
+#if (XUA_ADAT_TX_EN)
+    #if (MAX_FREQ > 96000)
+        #if (MIN_FREQ > 96000)
+            #define OUTPUT_FORMAT_COUNT 1
+            #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+        #elif (MIN_FREQ > 48000)
+            #define OUTPUT_FORMAT_COUNT 2
+            #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+            #define HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT (NUM_USB_CHAN_OUT - 2)
+        #else
+            #define OUTPUT_FORMAT_COUNT 3
+            #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+            #define HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT (NUM_USB_CHAN_OUT - 4)
+            #define HS_STREAM_FORMAT_OUTPUT_3_CHAN_COUNT (NUM_USB_CHAN_OUT - 6)
+        #endif
+    #elif (MAX_FREQ > 48000)
+        #if (MIN_FREQ > 48000)
+            #define OUTPUT_FORMAT_COUNT 1
+            #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+        #else
+            #define OUTPUT_FORMAT_COUNT 2
+            #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+            #define HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT (NUM_USB_CHAN_OUT - 4)
+        #endif
+    #else
+        #define OUTPUT_FORMAT_COUNT 1
+        #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT NUM_USB_CHAN_OUT
+    #endif
+    #define STREAM_FORMAT_OUTPUT_1_RESOLUTION_BITS  24
+    #define STREAM_FORMAT_OUTPUT_2_RESOLUTION_BITS  24
+    #define STREAM_FORMAT_OUTPUT_3_RESOLUTION_BITS  24
 #endif
 
 /**
- * @brief Enable DFU functionality. A driver required for Windows operation.
+ * @brief Enable DFU functionality.
  *
  * Default: 1 (Enabled)
  */
@@ -497,6 +578,15 @@
 #define XUA_DFU_EN                   (1)
 #elif defined(XUA_DFU_EN) && (XUA_DFU_EN == 0)
 #undef XUA_DFU_EN
+#endif
+
+/**
+ * @brief Use a Quad SPI (QSPI) flash part rather than a SPI flash
+ *
+ * Default: 1 (Enabled)
+ */
+#if !defined(XUA_QUAD_SPI_FLASH)
+#define XUA_QUAD_SPI_FLASH (1)
 #endif
 
 /**
@@ -626,14 +716,14 @@
  * @brief Device firmware version number in Binary Coded Decimal format: 0xJJMN where JJ: major, M: minor, N: sub-minor version number.
  */
 #ifndef BCD_DEVICE_J
-#define BCD_DEVICE_J             (1)
+#define BCD_DEVICE_J             (5)
 #endif
 
 /**
  * @brief Device firmware version number in Binary Coded Decimal format: 0xJJMN where JJ: major, M: minor, N: sub-minor version number.
  */
 #ifndef BCD_DEVICE_M
-#define BCD_DEVICE_M             (2)
+#define BCD_DEVICE_M             (0)
 #endif
 
 /**
@@ -962,7 +1052,18 @@
     #define HS_STREAM_FORMAT_INPUT_3_CHAN_COUNT             NUM_USB_CHAN_IN
 #endif
 
+/* Channel count defines for output streams */
+#ifndef HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT
+    #define HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT            NUM_USB_CHAN_OUT
+#endif
 
+#ifndef HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT
+    #define HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT            NUM_USB_CHAN_OUT
+#endif
+
+#ifndef HS_STREAM_FORMAT_OUTPUT_3_CHAN_COUNT
+    #define HS_STREAM_FORMAT_OUTPUT_3_CHAN_COUNT            NUM_USB_CHAN_OUT
+#endif
 
 /**
  * @brief Sample sub-slot size (bytes) of input stream Alternate 1 when running in high-speed
@@ -1226,7 +1327,7 @@
 #endif
 
 #if (XUA_SYNCMODE == XUA_SYNCMODE_SYNC)
-    #if (XUA_SPDIF_RX_EN|| ADAT_RX)
+    #if (XUA_SPDIF_RX_EN|| XUA_ADAT_RX_EN)
         #error "Digital input streams not supported in Sync mode"
     #endif
 #endif
@@ -1241,10 +1342,12 @@
 enum USBEndpointNumber_In
 {
     ENDPOINT_NUMBER_IN_CONTROL,     /* Endpoint 0 */
-#if (NUM_USB_CHAN_IN == 0) || defined (UAC_FORCE_FEEDBACK_EP)
+#if (NUM_USB_CHAN_OUT > 0) && ((NUM_USB_CHAN_IN == 0) || defined(UAC_FORCE_FEEDBACK_EP))
     ENDPOINT_NUMBER_IN_FEEDBACK,
 #endif
+#if (NUM_USB_CHAN_IN != 0)
     ENDPOINT_NUMBER_IN_AUDIO,
+#endif
 #if (XUA_SPDIF_RX_EN) || (XUA_ADAT_RX_EN)
     ENDPOINT_NUMBER_IN_INTERRUPT,   /* Audio interrupt/status EP */
 #endif
@@ -1269,7 +1372,9 @@ enum USBEndpointNumber_In
 enum USBEndpointNumber_Out
 {
     ENDPOINT_NUMBER_OUT_CONTROL,    /* Endpoint 0 */
+#if (NUM_USB_CHAN_OUT > 0)
     ENDPOINT_NUMBER_OUT_AUDIO,
+#endif
 #ifdef MIDI
     ENDPOINT_NUMBER_OUT_MIDI,
 #endif
@@ -1349,9 +1454,13 @@ enum USBEndpointNumber_Out
 
 /* Defines for DFU */
 #if (AUDIO_CLASS == 2)
-#define DFU_PID                     PID_AUDIO_2
+#ifndef DFU_PID
+    #define DFU_PID                     PID_AUDIO_2
+#endif
 #else
-#define DFU_PID                     PID_AUDIO_1
+#ifndef DFU_PID
+    #define DFU_PID                     PID_AUDIO_1
+#endif
 #endif
 #define DFU_VENDOR_ID               VENDOR_ID
 
@@ -1539,5 +1648,15 @@ enum USBEndpointNumber_Out
 
 #if (CODEC_MASTER == 1) && (DSD_CHANS_DAC != 0)
 #error CODEC_MASTER with DSD is currently unsupported
+#endif
+
+/**
+ * @brief Device interface GUID.
+ *
+ * This is provided as part of the device registry property in the MSOS 2.0 descriptor.
+ * Default: "{89C14132-D389-4FF7-944E-2E33379BB59D}" User can override by defining their own in xua_conf.h
+ */
+#ifndef WINUSB_DEVICE_INTERFACE_GUID
+#define WINUSB_DEVICE_INTERFACE_GUID               "{89C14132-D389-4FF7-944E-2E33379BB59D}"
 #endif
 

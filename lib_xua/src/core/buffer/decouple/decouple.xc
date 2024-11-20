@@ -1,4 +1,4 @@
-// Copyright 2011-2023 XMOS LIMITED.
+// Copyright 2011-2024 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 #include "xua.h"
 
@@ -20,7 +20,7 @@
 #if (HID_CONTROLS)
 #include "user_hid.h"
 #endif
-#define MAX(x,y) ((x)>(y) ? (x) : (y))
+#define XUA_MAX(x,y) ((x)>(y) ? (x) : (y))
 
 /* TODO use SLOTSIZE to potentially save memory */
 /* Note we could improve on this, for one subslot is set to 4 */
@@ -33,17 +33,22 @@
 #define MAX_DEVICE_AUD_PACKET_SIZE_IN_HS  (MAX_DEVICE_AUD_PACKET_SIZE_MULT_HS * NUM_USB_CHAN_IN + 4)
 #define MAX_DEVICE_AUD_PACKET_SIZE_IN_FS  (MAX_DEVICE_AUD_PACKET_SIZE_MULT_FS * NUM_USB_CHAN_IN_FS + 4)
 
-#define MAX_DEVICE_AUD_PACKET_SIZE_IN (MAX(MAX_DEVICE_AUD_PACKET_SIZE_IN_FS, MAX_DEVICE_AUD_PACKET_SIZE_IN_HS))
+#define MAX_DEVICE_AUD_PACKET_SIZE_IN (XUA_MAX(MAX_DEVICE_AUD_PACKET_SIZE_IN_FS, MAX_DEVICE_AUD_PACKET_SIZE_IN_HS))
 
 /*** OUT PACKET SIZES ***/
 #define MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS  (MAX_DEVICE_AUD_PACKET_SIZE_MULT_HS * NUM_USB_CHAN_OUT + 4)
 #define MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS  (MAX_DEVICE_AUD_PACKET_SIZE_MULT_FS * NUM_USB_CHAN_OUT_FS + 4)
 
-#define MAX_DEVICE_AUD_PACKET_SIZE_OUT (MAX(MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS, MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS))
+#define MAX_DEVICE_AUD_PACKET_SIZE_OUT (XUA_MAX(MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS, MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS))
 
 /*** BUFFER SIZES ***/
-
-#define BUFFER_PACKET_COUNT (4)    /* How many packets too allow for in buffer - minimum is 4 */
+/* How many packets too allow for in buffer - minimum is 5.
+2 for having in the aud_to_host buffer when it comes out of underflow, space available for 2 more for to accomodate cases when
+2 pkts from audio hub get written into the aud_to_host buffer within 1 SOF period, and space for 1 extra packet to ensure that
+when the 4th packet gets written to the buffer, there's space to accomodate the next packet, otherwise handle_audio_request() will
+drop packets after writing the 4th packet in the buffer
+*/
+#define BUFFER_PACKET_COUNT (5)
 
 #define BUFF_SIZE_OUT_HS    MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS * BUFFER_PACKET_COUNT
 #define BUFF_SIZE_OUT_FS    MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS * BUFFER_PACKET_COUNT
@@ -51,11 +56,11 @@
 #define BUFF_SIZE_IN_HS     MAX_DEVICE_AUD_PACKET_SIZE_IN_HS * BUFFER_PACKET_COUNT
 #define BUFF_SIZE_IN_FS     MAX_DEVICE_AUD_PACKET_SIZE_IN_FS * BUFFER_PACKET_COUNT
 
-#define BUFF_SIZE_OUT       MAX(BUFF_SIZE_OUT_HS, BUFF_SIZE_OUT_FS)
-#define BUFF_SIZE_IN        MAX(BUFF_SIZE_IN_HS, BUFF_SIZE_IN_FS)
+#define BUFF_SIZE_OUT       XUA_MAX(BUFF_SIZE_OUT_HS, BUFF_SIZE_OUT_FS)
+#define BUFF_SIZE_IN        XUA_MAX(BUFF_SIZE_IN_HS, BUFF_SIZE_IN_FS)
 
-#define OUT_BUFFER_PREFILL  (MAX(MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS, MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS))
-#define IN_BUFFER_PREFILL   (MAX(MAX_DEVICE_AUD_PACKET_SIZE_IN_HS, MAX_DEVICE_AUD_PACKET_SIZE_IN_FS)*2)
+#define OUT_BUFFER_PREFILL  (XUA_MAX(MAX_DEVICE_AUD_PACKET_SIZE_OUT_HS, MAX_DEVICE_AUD_PACKET_SIZE_OUT_FS))
+#define IN_BUFFER_PREFILL   (XUA_MAX(MAX_DEVICE_AUD_PACKET_SIZE_IN_HS, MAX_DEVICE_AUD_PACKET_SIZE_IN_FS)*2)
 
 /* Volume and mute tables */
 #if (OUT_VOLUME_IN_MIXER == 0) && (OUTPUT_VOLUME_CONTROL == 1)
@@ -150,68 +155,65 @@ unsigned unpackData = 0;
 unsigned packState = 0;
 unsigned packData = 0;
 
-static inline void SendSamples4(chanend c_mix_out)
+static inline void _send_sample_4(chanend c_mix_out, int ch)
 {
-    /* Doing this checking allows us to unroll */
-    if(g_numUsbChan_Out == NUM_USB_CHAN_OUT)
-    {
-        /* Buffering not underflow condition send out some samples...*/
-#pragma loop unroll
-        for(int i = 0; i < NUM_USB_CHAN_OUT; i++)
-        {
-            int sample;
-            int mult;
-            int h;
-            unsigned l;
-
-            read_via_xc_ptr(sample, g_aud_from_host_rdptr);
-            g_aud_from_host_rdptr+=4;
+    int sample;
+    read_via_xc_ptr(sample, g_aud_from_host_rdptr);
+    g_aud_from_host_rdptr+=4;
 
 #if (OUTPUT_VOLUME_CONTROL == 1) && (!OUT_VOLUME_IN_MIXER)
-            unsafe
-            {
-                mult = multOutPtr[i];
-            }
-            {h, l} = macs(mult, sample, 0, 0);
-            h <<= 3;
+    int mult;
+    int h;
+    unsigned l;
+    unsafe
+    {
+        mult = multOutPtr[ch];
+    }
+    {h, l} = macs(mult, sample, 0, 0);
+    h <<= 3;
 #if (STREAM_FORMAT_OUTPUT_RESOLUTION_32BIT_USED == 1)
-            h |= (l >>29) & 0x7; // Note: This step is not required if we assume sample depth is 24bit (rather than 32bit)
-                                 // Note: We need all 32bits for Native DSD
+    h |= (l >>29) & 0x7; // Note: This step is not required if we assume sample depth is 24bit (rather than 32bit)
+                            // Note: We need all 32bits for Native DSD
 #endif
-            outuint(c_mix_out, h);
+    outuint(c_mix_out, h);
 #else
-            outuint(c_mix_out, sample);
+    outuint(c_mix_out, sample);
 #endif
+}
+
+static inline void SendSamples4(chanend c_mix_out)
+{
+    /* Doing this allows us to unroll */
+    if(g_numUsbChan_Out == HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT)
+    {
+        #pragma loop unroll
+        for(int i = 0; i < HS_STREAM_FORMAT_OUTPUT_1_CHAN_COUNT; i++)
+        {
+            _send_sample_4(c_mix_out, i);
+        }
+    }
+    else if(g_numUsbChan_Out == HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT)
+    {
+        #pragma loop unroll
+        for(int i = 0; i < HS_STREAM_FORMAT_OUTPUT_2_CHAN_COUNT; i++)
+        {
+            _send_sample_4(c_mix_out, i);
+        }
+    }
+    else if(g_numUsbChan_Out == HS_STREAM_FORMAT_OUTPUT_3_CHAN_COUNT)
+    {
+        #pragma loop unroll
+        for(int i = 0; i < HS_STREAM_FORMAT_OUTPUT_3_CHAN_COUNT; i++)
+        {
+            _send_sample_4(c_mix_out, i);
         }
     }
     else
     {
-#pragma loop unroll
+        #pragma loop unroll
         for(int i = 0; i < NUM_USB_CHAN_OUT_FS; i++)
         {
-            int sample;
-            int mult;
-            int h;
-            unsigned l;
-
-            read_via_xc_ptr(sample, g_aud_from_host_rdptr);
-            g_aud_from_host_rdptr+=4;
-
-#if (OUTPUT_VOLUME_CONTROL == 1) && (!OUT_VOLUME_IN_MIXER)
-            unsafe
-            {
-                mult = multOutPtr[i];
-            }
-            {h, l} = macs(mult, sample, 0, 0);
-            h <<= 3;
-#if (STREAM_FORMAT_OUTPUT_RESOLUTION_32BIT_USED == 1)
-            h |= (l >>29) & 0x7; // Note: This step is not required if we assume sample depth is 24bit (rather than 32bit)
-                                 // Note: We need all 32bits for Native DSD
-#endif
-            outuint(c_mix_out, h);
-#else
-            outuint(c_mix_out, sample);
-#endif
+            _send_sample_4(c_mix_out, i);
         }
     }
 }
@@ -566,7 +568,7 @@ __builtin_unreachable();
 
             /* Must allow space for at least one sample per channel, as these are written at the beginning of
              * the interrupt handler even if totalSampsToWrite is zero (will be overwritten by a later packet). */
-            int spaceRequired = MAX(totalSampsToWrite, 1) * g_numUsbChan_In * g_curSubSlot_In + 4;
+            int spaceRequired = XUA_MAX(totalSampsToWrite, 1) * g_numUsbChan_In * g_curSubSlot_In + 4;
             if (spaceRequired > BUFF_SIZE_IN - fillLevel)
             {
                 /* In pipe has filled its buffer - we need to overflow
@@ -1054,7 +1056,21 @@ void XUA_Buffer_Decouple(chanend c_mix_out
                     assert(fillLevel <= BUFF_SIZE_IN);
 
                     /* Check if we have come out of underflow */
-                    if (fillLevel >= IN_BUFFER_PREFILL)
+                    unsigned sampFreq;
+                    GET_SHARED_GLOBAL(sampFreq, g_freqChange_sampFreq);
+                    int min, mid, max;
+                    GetADCCounts(sampFreq, min, mid, max);
+                    const int min_pkt_size = ((min * g_curSubSlot_In * g_numUsbChan_In + 3) & ~0x3) + 4;
+
+                    /*
+                        Come out of underflow if there are exactly 2 packets in the buffer.
+                        This ensures that handle_audio_request() does not drop packets when writing packets into the aud_to_host buffer
+                        when aud_to_host buffer is not in underflow.
+                        For example, coming out of underflow with 3 packets in the buffer would mean handle_audio_request()
+                        drops packets if 2 pkts are received from audio hub in 1 SOF period. Coming out of underflow with 4
+                        packets would mean handle_audio_request would drop packets after writing 1 packet to the aud_to_host buffer.
+                    */
+                    if ((fillLevel >= (min_pkt_size*2)) && (fillLevel < (min_pkt_size*3)))
                     {
                         int aud_to_host_rdptr;
                         GET_SHARED_GLOBAL(aud_to_host_rdptr, g_aud_to_host_rdptr);

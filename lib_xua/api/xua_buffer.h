@@ -3,8 +3,10 @@
 #ifndef _XUA_BUFFER_H_
 #define _XUA_BUFFER_H_
 
-#if __XC__
 
+#if (__XC__ || defined __DOXYGEN__)
+
+#include "xccompat.h"
 #include "xua_clocking.h" /* Required for pll_ref_if */
 
 /** USB Audio Buffering Core(s).
@@ -30,11 +32,13 @@
  *  \param c_swpll_update       Channel connected to software PLL task. Expects master clock counts based on USB frames.
  */
 void XUA_Buffer(
+#if (NUM_USB_CHAN_OUT > 0)
             chanend c_aud_out,
+#endif
 #if (NUM_USB_CHAN_IN > 0) || defined(__DOXYGEN__)
             chanend c_aud_in,
 #endif
-#if (NUM_USB_CHAN_IN == 0) || defined (UAC_FORCE_FEEDBACK_EP)
+#if ((NUM_USB_CHAN_OUT > 0) && ((NUM_USB_CHAN_IN == 0) || defined(UAC_FORCE_FEEDBACK_EP))) || defined(__DOXYGEN__)
             chanend c_aud_fb,
 #endif
 #if defined(MIDI) || defined(__DOXYGEN__)
@@ -43,12 +47,12 @@ void XUA_Buffer(
             chanend c_midi,
 #endif
 #if XUA_SPDIF_RX_EN || XUA_ADAT_RX_EN || defined(__DOXYGEN__)
-            chanend ?c_int,
-            chanend ?c_clk_int,
+            NULLABLE_RESOURCE(chanend, c_int),
+            NULLABLE_RESOURCE(chanend, c_clk_int),
 #endif
             chanend c_sof,
             chanend c_aud_ctl,
-            in port p_off_mclk
+            in_port_t p_off_mclk
 #if (HID_CONTROLS)
             , chanend c_hid
 #endif
@@ -56,7 +60,7 @@ void XUA_Buffer(
 #if (XUA_SYNCMODE == XUA_SYNCMODE_SYNC) || defined(__DOYXGEN__)
             , chanend c_audio_rate_change
     #if (!XUA_USE_SW_PLL) || defined(__DOXYGEN__)
-            , client interface pll_ref_if i_pll_ref
+            , CLIENT_INTERFACE(pll_ref_if, i_pll_ref)
     #endif
     #if (XUA_USE_SW_PLL) || defined(__DOXYGEN__)
             , chanend c_swpll_update
@@ -64,11 +68,15 @@ void XUA_Buffer(
 #endif
         );
 
-void XUA_Buffer_Ep(chanend c_aud_out,
+void XUA_Buffer_Ep(
+
+#if (NUM_USB_CHAN_OUT > 0)
+            chanend c_aud_out,
+#endif
 #if (NUM_USB_CHAN_IN > 0) || defined(__DOXYGEN__)
             chanend c_aud_in,
 #endif
-#if (NUM_USB_CHAN_IN == 0) || defined (UAC_FORCE_FEEDBACK_EP)
+#if ((NUM_USB_CHAN_OUT > 0) && ((NUM_USB_CHAN_IN == 0) || defined(UAC_FORCE_FEEDBACK_EP))) || defined(__DOXYGEN__)
             chanend c_aud_fb,
 #endif
 #ifdef MIDI
