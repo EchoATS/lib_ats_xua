@@ -17,7 +17,7 @@
 
 #define PREPEND_COMMA(x) ,x
 
-#define VENDOR_REQUESTS_PARAMS chanend c_echoats
+//#define VENDOR_REQUESTS_PARAMS chanend c_echoats
 
 #ifndef VENDOR_REQUESTS_PARAMS
 #define VENDOR_REQUESTS_PARAMS_

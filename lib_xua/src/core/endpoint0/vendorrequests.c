@@ -1,8 +1,8 @@
 // Copyright 2016-2024 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
-#include "xua.h"
 #if XUA_USB_EN
 
+#include "xua.h"
 #include "xud.h"
 #include "vendorrequests.h"
 

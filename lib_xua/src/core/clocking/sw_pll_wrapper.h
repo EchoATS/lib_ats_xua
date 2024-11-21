@@ -4,9 +4,10 @@
 #ifndef _SW_PLL_WRAPPPER_H_
 #define _SW_PLL_WRAPPPER_H_
 
+#if XUA_USE_SW_PLL
+
 #include "xua.h"
 
-#if XUA_USE_SW_PLL
 extern "C"
 {
     #include "sw_pll.h"
