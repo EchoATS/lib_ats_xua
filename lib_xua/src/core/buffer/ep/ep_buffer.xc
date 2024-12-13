@@ -172,6 +172,7 @@ void XUA_Buffer(
 
 // Allows us to externally modify masterClockFreq
 unsafe{volatile unsigned * unsafe masterClockFreq_ptr;}
+unsigned ATS_getMasterClockFreq(unsigned sampleFreq);
 
 /**
  * Buffers data from audio endpoints
@@ -475,16 +476,9 @@ void XUA_Buffer_Ep(
                         /* Set g_speed to something sensible. We expect it to get over-written before stream time */
                         int min, mid, max;
                         GetADCCounts(sampleFreq, min, mid, max);
-                        g_speed = mid<<16;
+                        g_speed = mid << 16;
 
-                        if((MCLK_48 % sampleFreq) == 0)
-                        {
-                            masterClockFreq = MCLK_48;
-                        }
-                        else
-                        {
-                            masterClockFreq = MCLK_441;
-                        }
+                        masterClockFreq = ATS_getMasterClockFreq(sampleFreq);
                     }
 #endif /* (MAX_FREQ != MIN_FREQ) */
                     /* Ideally we want to wait for handshake (and pass back up) here.  But we cannot keep this

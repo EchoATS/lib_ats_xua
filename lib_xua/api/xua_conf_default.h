@@ -243,26 +243,7 @@
 #define MIN_FREQ                 (44100)
 #endif
 
-/**
- * @brief Master clock defines for 44100 rates (in Hz).
- *
- * Default: NONE (Must be defined by app)
- */
-#ifndef MCLK_441
-    #error MCLK_441 not defined
-    #define MCLK_441             (256 * 44100) /* Define anyway for doygen */
-#endif
-
-/**
- * @brief Master clock defines for 48000 rates (in Hz).
- *
- * Default: NONE (Must be defined by app)
- */
-#ifndef MCLK_48
-    #error MCLK_48 not defined
     #define MCLK_48              (256 * 48000) /* Define anyway for doygen */
-#endif
-
 /**
  * @brief Enable/disable the use of the secondary/application PLL for generating and recovering master-clocks.
  *        Only available on xcore.ai devices.
@@ -1613,30 +1594,10 @@ enum USBEndpointNumber_Out
 #endif
 
 
-/* Setup DEFAULT_MCLK_FREQ based on MCLK_ and DEFAULT_FREQ defines */
-#if ((MCLK_441 % DEFAULT_FREQ) == 0)
-#define DEFAULT_MCLK_FREQ MCLK_441
-#elif ((MCLK_48 % DEFAULT_FREQ) == 0)
-#define DEFAULT_MCLK_FREQ MCLK_48
-#else
-#error Bad DEFAULT_MCLK_FREQ
-#endif
-
 /* DFU functional descriptor wDetachTimeOut field (milliseconds)
  * Time for device to wait for bus reset after DETACH request before reverting to idle state */
 #ifndef DFU_DETACH_TIME_OUT
 #define DFU_DETACH_TIME_OUT 250
-#endif
-
-#if ((MCLK_441 % MIN_FREQ) == 0)
-#define MIN_FREQ_44 MIN_FREQ
-#define MIN_FREQ_48 ((48000 * 512)/((44100 * 512)/MIN_FREQ))
-#endif
-
-#if ((MCLK_48 % MIN_FREQ) == 0)
-#define MIN_FREQ_48 MIN_FREQ
-/* * 2 required since we want the next 44.1 based freq above MIN_FREQ */
-#define MIN_FREQ_44 (((44100*512)/((48000 * 512)/MIN_FREQ))*2)
 #endif
 
 /* Internal define for port declaration */
