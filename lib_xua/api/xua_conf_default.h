@@ -243,7 +243,6 @@
 #define MIN_FREQ                 (44100)
 #endif
 
-    #define MCLK_48              (256 * 48000) /* Define anyway for doygen */
 /**
  * @brief Enable/disable the use of the secondary/application PLL for generating and recovering master-clocks.
  *        Only available on xcore.ai devices.
