@@ -263,7 +263,7 @@
  * Default: MIN_FREQ
  */
 #ifndef DEFAULT_FREQ
-#define DEFAULT_FREQ             (MIN_FREQ)
+#define DEFAULT_FREQ             48000
 #endif
 
 #define DEFAULT_MCLK       (((DEFAULT_FREQ % 7350) == 0) ? MCLK_441 : MCLK_48)
