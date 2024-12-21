@@ -346,10 +346,13 @@ typedef struct
 #ifdef IAP_EA_NATIVE_TRANS
     STR_TABLE_ENTRY(iAP_EANativeTransport_InterfaceStr);
 #endif
+
+    STR_TABLE_ENTRY(firmwareBuildTimestampStr);
 } StringDescTable_t;
 
 StringDescTable_t g_strTable =
 {
+    .firmwareBuildTimestampStr   = __DATE__ " " __TIME__,
     .langID                      = "\x09\x04", /* US English */
     .vendorStr                   = XUA_VENDOR_EMPTY_STRING,
     .serialStr                   = XUA_SERIAL_EMPTY_STRING,
