@@ -935,17 +935,18 @@ void XUA_Buffer_Decouple(chanend c_mix_out
                     dsdMode = DSD_MODE_NATIVE;
                 }
 #endif
-                /* Wait for the audio code to request samples and respond with command */
-                inuint(c_mix_out);
-                outct(c_mix_out, SET_STREAM_FORMAT_OUT);
-                outuint(c_mix_out, dsdMode);
-                outuint(c_mix_out, sampRes);
-
-                /* Wait for handshake back */
-                chkct(c_mix_out, XS1_CT_END);
-                asm volatile("outct res[%0],%1"::"r"(buffer_aud_ctl_chan),"r"(XS1_CT_END));
+                /* ATS: do not forward the format change to the audio pipeline.
+                 * The TDM engine runs fixed 32-bit slots with no DSD support, so
+                 * an OUT format change is a no-op for the audio threads —
+                 * forwarding it caused a full TDM restart and a one-shot
+                 * corrupted frame at first playback start after enumeration.
+                 * Handled entirely USB-side, mirroring SET_STREAM_FORMAT_IN
+                 * above; the pending audio frame request is serviced by the
+                 * sample-transfer handler once interrupts are re-enabled. */
 
                 SET_SHARED_GLOBAL(g_freqChange, 0);
+                asm volatile("outct res[%0],%1"::"r"(buffer_aud_ctl_chan),"r"(XS1_CT_END));
+
                 ENABLE_INTERRUPTS();
             }
 #endif
